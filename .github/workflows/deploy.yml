@@ -28,7 +28,7 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
@@ -37,8 +37,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ vars.DOCKERHUB_USERNAME }}/fastapi-practice:latest
-            ${{ vars.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-practice:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }}
 
       - name: Deploy to EC2 over SSH
         uses: appleboy/ssh-action@v1.2.2
@@ -49,7 +49,7 @@ jobs:
           script: |
             set -eu
 
-            sudo docker pull ${{ vars.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }}
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }}
 
             sudo docker stop fastapi-app || true
             sudo docker rm fastapi-app || true
@@ -58,7 +58,7 @@ jobs:
               --name fastapi-app \
               --restart unless-stopped \
               -p 8000:8000 \
-              ${{ vars.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }}
+              ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }}
 
             sleep 5
             sudo docker inspect --format='{{.State.Running}}' fastapi-app | grep -qx true
