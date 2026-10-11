@@ -88,6 +88,7 @@ jobs:
             echo "=== App files inside container ==="
             sudo docker exec fastapi-app ls -la /app
             echo "=== Physical location of image files on EC2 disk ==="
-            sudo docker inspect ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }} \
-              --format '{{.GraphDriver.Data.UpperDir}}'
+            IMAGE_ID=$(sudo docker inspect --format '{{.Image}}' fastapi-app)
+            sudo docker inspect "$IMAGE_ID" --format 'UpperDir: {{index .GraphDriver.Data "UpperDir"}}' || \
+              echo "Storage driver: $(sudo docker info --format '{{.Driver}}') — image stored under /var/lib/docker/"
             echo "Deployment successful"
