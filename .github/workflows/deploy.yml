@@ -22,6 +22,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Debug - Show build context
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo ""
+          echo "=== Files in repo root ==="
+          ls -la
+          echo ""
+          echo "=== .dockerignore contents ==="
+          cat .dockerignore 2>/dev/null || echo "No .dockerignore found"
+          echo ""
+          echo "=== Docker build context will include ==="
+          find . -type f ! -path './.git/*' ! -path './.venv/*' ! -path './__pycache__/*' | sort
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -49,6 +63,13 @@ jobs:
           script: |
             set -eu
 
+            echo "=== EC2 current dir ==="
+            pwd
+            echo "=== Docker images on EC2 (before pull) ==="
+            sudo docker images
+            echo "=== Running containers (before) ==="
+            sudo docker ps -a
+
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }}
 
             sudo docker stop fastapi-app || true
@@ -62,4 +83,11 @@ jobs:
 
             sleep 5
             sudo docker inspect --format='{{.State.Running}}' fastapi-app | grep -qx true
+            echo "=== Running containers (after) ==="
+            sudo docker ps
+            echo "=== App files inside container ==="
+            sudo docker exec fastapi-app ls -la /app
+            echo "=== Physical location of image files on EC2 disk ==="
+            sudo docker inspect ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-practice:${{ github.sha }} \
+              --format '{{.GraphDriver.Data.UpperDir}}'
             echo "Deployment successful"
